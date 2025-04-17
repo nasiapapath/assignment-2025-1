@@ -111,15 +111,6 @@ if __name__ == "__main__":
     for idx, s in enumerate(sigma):
         path = s_chain_to_graph(s)
         print(f"Path from σ_{idx} ({s}): {path}")
-        if __name__ == "__main__":
-    s = int(input("Δώσε το πλήθος των 1 (s): "))
-    t = int(input("Δώσε το πλήθος των 0 (t): "))
-
-    sigma = create_all_s(s, t)
-
-    for idx, s in enumerate(sigma):
-        path = s_chain_to_graph(s)
-        print(f"Path from σ_{idx} ({s}): {path}")
         print(f"Εκτέλεση DFS για σ_{idx} ({s}):")
         visited = set()
         dfs_genlex(path, list(path.keys())[0], visited, [])
