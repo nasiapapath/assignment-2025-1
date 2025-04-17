@@ -19,7 +19,6 @@ def rightest_block(s):
     else:
         return (None, None, None)
     
-
 def replacement(s, block, start, end):
     if block == 'R':
         previous = s[:start]
@@ -85,17 +84,13 @@ def homogeneous_genlex_path(path):
             return False
     return True
 
-
-
-
-
 if __name__ == "__main__":
     s = int(input("Δώσε το πλήθος των 1 (s): "))
     t = int(input("Δώσε το πλήθος των 0 (t): "))
 
-    ss = create_all_s(s, t)
+    sigma = create_all_s(s, t)
 
-    for idx, s in enumerate(ss):
+    for idx, s in enumerate(sigma):
         path = s_chain_to_graph(s)
         print(f"Path from σ_{idx} ({s}): {path}")
         is_valid = homogeneous_genlex_path(path)
