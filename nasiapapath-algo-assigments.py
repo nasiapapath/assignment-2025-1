@@ -78,29 +78,41 @@ def create_graph_peaks(s, t):
 def homogeneous(x, y):
     return bin(x ^ y).count('1') == 1
 
+def genlex_compare(a, u):
+    a_bin = format(a, 'b').zfill(max(len(bin(a)), len(bin(u))))
+    u_bin = format(a, 'b').zfill(max(len(bin(a)), len(bin(u))))
+    return a_bin < u_bin
+
+def genlex_path(path):
+    return all(genlex_compare(path[i], path[i+1]) for i in range(len(path)-1))
+
 def homogeneous_genlex_path(path):
     for i in range(1, len(path)):
         if not homogeneous(path[i-1], path[i]):
             return False
-    return True
+     return genlex_path(path)
 
-def dfs_genlex(graph, peak, visited, path):
-    visited.add(peak)  
-    path.append(peak)
-    if len(path) > 1 and not homogeneous_genlex_path(path):
-        path.pop()  
-        visited.remove(peak)
-        return
-    if len(path) == len(graph):
-        print(f"Ομογενές Genlex μονοπάτι: {path}")
-        for neighbor in graph.get(peak, []):
+def dfs(current, visited, path, peaks, results):
+     visited.add(current)
+     path.append(current)
+     if len(path) == len(peaks):
+        results.append(path.copy())
+
+     else:
+        for neighbor in peaks:
             if neighbor not in visited:
-           
-              if homogeneous_genlex_path(path + [neighbor]):
-                dfs_genlex(graph, neighbor, visited, path)
-    path.pop()
-    visited.remove(peak)
+                if homogeneous(current, neighbor):
+                    if len(path) == 0 or genlex_compare(path[-1], neighbor):
+                        dfs(neighbor, visited, path, peaks, results)
 
+     visited.remove(current)
+     path.pop()
+
+def find_all_genlex_paths(peaks):
+    results = []
+    for start in peaks:
+        dfs(start, set(), [], peaks, results)
+    return results
 
 if __name__ == "__main__":
     s = int(input("Δώσε το πλήθος των 1 (s): "))
@@ -111,6 +123,15 @@ if __name__ == "__main__":
     for idx, s in enumerate(sigma):
         path = s_chain_to_graph(s)
         print(f"Path from σ_{idx} ({s}): {path}")
-        print(f"Εκτέλεση DFS για σ_{idx} ({s}):")
-        visited = set()
-        dfs_genlex(path, list(path.keys())[0], visited, [])
+        is_valid = homogeneous_genlex_path(path)
+        print(" Ομογενής Genlex διαδρομή" if is_valid else " Δεν είναι ομογενής")
+
+    print(" Πλήρεις Ομογενείς Genlex Διαδρομές με DFS:")
+    peaks = create_graph_peaks(s, t)
+    full_paths = find_all_genlex_paths(peaks)
+    if full_paths:
+        for p in full_paths:
+            print(p)
+    else:
+        print(" Δεν βρέθηκαν πλήρεις διαδρομές.")
+       
