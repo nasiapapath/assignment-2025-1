@@ -1,9 +1,11 @@
+import re
+import itertools
+
 def s_j(j, s, t):
     binary = format(j, f'0{s-1}b')  
     balanced = ''.join('-' if bit == '1' else '+' for bit in binary)
     s_j = '0' * t + '-' + balanced
     return s_j
-import re
 
 def rightest_block(s):
     r= list(re.finditer(r'0-[-+]*\+', s))
@@ -61,8 +63,6 @@ def create_all_s(s, t):
     for j in range(2 ** (s - 1)):
         sigma.append(s_j(j, s, t))
     return sigma
-
-import itertools
 
 def create_graph_peaks(s, t):
     n = s + t
