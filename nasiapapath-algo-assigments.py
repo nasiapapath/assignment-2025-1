@@ -1,5 +1,6 @@
 import re
 import itertools
+import argparse
 
 def s_j(j, s, t):
     binary = format(j, f'0{s-1}b')  
@@ -23,15 +24,12 @@ def rightest_block(s):
     
 def replacement(s, block, start, end):
     if block == 'R':
-        previous = s[:start]
-        body = s[start+1:end-1]
-        replaced = '-' + '+' * len(body) + '0'
-        return previous + replaced + s[end:]
+        body = '-' + '+' * (end - start - 2) + '0'
+        return s[:start] + body + s[end:]
     elif block == 'L':
         previous = s[:start]
-        body = s[start+1:end-1]
-        replaced = '0' + '+' * len(body) + '+'
-        return previous + replaced + s[end:]
+        body = '0' + '+' * (end - start - 2) + '+'
+        return s[:start] + body + s[end:]
     else:
         return s  
 
@@ -52,61 +50,33 @@ def balanced_to_binary_string(balanced):
 def binary_string_to_decimal(binary):
     return int(binary, 2)
 
-def s_chain_to_graph(s):
-    chain = create_chain(s)
-    binary_nodes = [balanced_to_binary_string(b) for b in chain]
-    decimal_nodes = [binary_string_to_decimal(b) for b in binary_nodes]
-    return decimal_nodes
-
-def create_all_s(s, t):
-    sigma = []
-    for j in range(2 ** (s - 1)):
-        sigma.append(s_j(j, s, t))
-    return sigma
-
-def create_graph_peaks(s, t):
+def create_all_peaks(s, t):
     n = s + t
-    peaks = set()
-
-    for bits in itertools.permutations('1'*s + '0'*t, n):
-        bin_str = ''.join(bits)
-        decimal = int(bin_str, 2)
-        peaks.add(decimal)
-
-    return sorted(peaks)
+    elements = '1' * s + '0' * t
+    unique_numbers = set(int(''.join(p), 2) for p in itertools.permutations(elements))
+    return sorted(unique_numbers)
 
 def homogeneous(x, y):
     return bin(x ^ y).count('1') == 1
 
 def genlex_compare(a, u):
-    a_bin = format(a, 'b').zfill(max(len(bin(a)), len(bin(u))))
-    u_bin = format(a, 'b').zfill(max(len(bin(a)), len(bin(u))))
+    a_bin = format(a, 'b').zfill(32)
+    u_bin = format(a, 'b').zfill(32)
     return a_bin < u_bin
 
-def genlex_path(path):
-    return all(genlex_compare(path[i], path[i+1]) for i in range(len(path)-1))
-
-def homogeneous_genlex_path(path):
-    for i in range(1, len(path)):
-        if not homogeneous(path[i-1], path[i]):
-            return False
-     return genlex_path(path)
-
-def dfs(current, visited, path, peaks, results):
-     visited.add(current)
-     path.append(current)
+def dfs(node, visited, path, peaks, results):
+     visited.add(node)
+     path.append(node)
      if len(path) == len(peaks):
         results.append(path.copy())
 
      else:
         for neighbor in peaks:
-            if neighbor not in visited:
-                if homogeneous(current, neighbor):
-                    if len(path) == 0 or genlex_compare(path[-1], neighbor):
-                        dfs(neighbor, visited, path, peaks, results)
+            if neighbor not in visited and homogeneous(node, neighbor) and genlex_compare(path[-1], neighbor):
+                     dfs(neighbor, visited, path, peaks, results)
 
-     visited.remove(current)
      path.pop()
+     visited.remove(node)
 
 def find_all_genlex_paths(peaks):
     results = []
@@ -114,24 +84,59 @@ def find_all_genlex_paths(peaks):
         dfs(start, set(), [], peaks, results)
     return results
 
-if __name__ == "__main__":
-    s = int(input("Δώσε το πλήθος των 1 (s): "))
-    t = int(input("Δώσε το πλήθος των 0 (t): "))
+def print_path(path):
+    print(path)
 
-    sigma = create_all_s(s, t)
+def create_graph(s, t):
+    peaks = create_all_peaks(s, t)
+    connections = {}
 
-    for idx, s in enumerate(sigma):
-        path = s_chain_to_graph(s)
-        print(f"Path from σ_{idx} ({s}): {path}")
-        is_valid = homogeneous_genlex_path(path)
-        print(" Ομογενής Genlex διαδρομή" if is_valid else " Δεν είναι ομογενής")
+    for a in peaks:
+        neighbors = []
+        for b in peaks:
+            if a != b and homogeneous(a, b):
+                neighbors.append(b)
+        connections[a] = neighbors
 
-    print(" Πλήρεις Ομογενείς Genlex Διαδρομές με DFS:")
-    peaks = create_graph_peaks(s, t)
-    full_paths = find_all_genlex_paths(peaks)
-    if full_paths:
-        for p in full_paths:
-            print(p)
+    for node in connections:
+        print(f"{node} -> {sorted(connections[node])}")
+
+def create_bts_paths(s, t):
+    for j in range(2 ** (s-1)):
+        sigma = s_j(j, s, t)
+        chain = create_chain(sigma)
+        binary_chain = [balanced_to_binary_string(s) for seq in chain]
+        decimal_chain = [binary_string_to_decimal(b) for b in binary_chain]
+
+        print(decimal_chain)
+
+def create_dfs_path(s, t, start_node=None):
+    peaks = create_all_peaks(s, t)
+    paths = []
+
+    if start_node is not None:
+        if start_node not in peaks:
+            print(f"Start node {start_node} is not a valid peak.")
+            return
+        dfs(start_node, set(), [], peaks, paths)
     else:
-        print(" Δεν βρέθηκαν πλήρεις διαδρομές.")
-       
+        paths = find_all_genlex_paths(peaks)
+
+    for path in paths:
+        print_path(path)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("s", type=int, help="1")
+    parser.add_argument("t", type=int, help="0")
+    parser.add_argument("mode", choices=["graph", "dfs", "bts"])
+    parser.add_argument("start", type=int, nargs="?")
+
+    args = parser.parse_args()
+
+    if args.mode == "graph":
+        create_graph(args.s, args.t)
+    elif args.mode == "bts":
+        create_bts_paths(args.s, args.t)
+    elif args.mode == "dfs":
+        create_dfs_path(args.s, args.t, args.start)
